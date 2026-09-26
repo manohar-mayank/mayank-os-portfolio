@@ -7,7 +7,7 @@ export const personal = {
 
 export const contact = {
   email: "manoharmayank33@gmail.com",
-  phone: "",
+  phone: "+91 9472582351",
   github: "https://github.com/manohar-mayank",
   linkedin: "https://www.linkedin.com/in/manohar-mayank",
   resume: "/assets/Mayank_Resume.pdf",

@@ -1,2 +1,22 @@
 import { personal } from "../data/profile";
-export function ProfilePhoto() { return <figure className="group border border-stone-300 bg-stone-50 dark:border-[#373b33] dark:bg-[#181b17]"><div className="aspect-[.9] overflow-hidden bg-stone-200 dark:bg-[#20241e]"><img src="/assets/profile.jpg" alt={`Portrait of ${personal.name}`} className="h-full w-full object-cover object-top grayscale-[.18] transition duration-500 motion-reduce:transition-none group-hover:scale-[1.025] group-hover:grayscale-0" /></div><figcaption className="grid grid-cols-1 gap-2 p-3 font-mono text-[9px] tracking-[.08em] text-stone-500 sm:grid-cols-2 dark:text-[#a1a399]"><span className="text-lime-600 dark:text-[#c7f464]">MAYANK MANOHAR</span><span>FULL STACK DEVELOPER</span><span>INDIA / 2026</span><span>BUILD · SHIP · LEARN</span></figcaption></figure>; }
+export function ProfilePhoto() {
+  return (
+    <figure className="group border border-stone-300 bg-stone-50 dark:border-[#373b33] dark:bg-[#181b17]">
+      <div className="aspect-[.9] overflow-hidden bg-stone-200 dark:bg-[#20241e]">
+        <img
+          src="/assets/profile.jpg"
+          alt={`Portrait of ${personal.name}`}
+          className="h-full w-full object-cover object-top grayscale-[.18] transition duration-500 motion-reduce:transition-none group-hover:scale-[1.025] group-hover:grayscale-0"
+        />
+      </div>
+      <figcaption className="grid grid-cols-1 gap-2 p-3 font-mono text-[9px] tracking-[.08em] text-stone-500 sm:grid-cols-2 dark:text-[#a1a399]">
+        <span className="text-lime-600 dark:text-[#c7f464]">
+          MAYANK MANOHAR
+        </span>
+        <span>FULL STACK DEVELOPER</span>
+        <span>INDIA / 2026</span>
+        <span>BUILD · SHIP · LEARN</span>
+      </figcaption>
+    </figure>
+  );
+}

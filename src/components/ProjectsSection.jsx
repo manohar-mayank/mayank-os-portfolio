@@ -14,41 +14,71 @@ export function ProjectsSection() {
   } = usePortfolio();
   const rail = useRef(null);
   const tween = useRef(null);
+  const drag = useRef(null);
+  const suppressClick = useRef(false);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     const element = rail.current;
     if (!element) return undefined;
 
+    tween.current?.kill();
+    tween.current = null;
+    element.scrollLeft = 0;
+    element.style.scrollSnapType = "";
     element.setAttribute("data-lenis-prevent", "");
-    element.style.scrollSnapType = "none";
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const finePointer = window.matchMedia(
+      "(hover: hover) and (pointer: fine)",
+    ).matches;
+    if (projectFilter !== "All") {
+      if (finePointer) element.style.scrollSnapType = "none";
+      return undefined;
+    }
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !finePointer
+    ) {
       return undefined;
     }
 
-    const cycleWidth = element.scrollWidth / 2;
-    if (cycleWidth <= element.clientWidth) return undefined;
+    element.style.scrollSnapType = "none";
+    const maxScroll = element.scrollWidth - element.clientWidth;
+    if (maxScroll <= 0) return undefined;
 
     tween.current = gsap.to(element, {
-      scrollLeft: cycleWidth,
-      duration: Math.max(16, cycleWidth / 24),
+      scrollLeft: maxScroll,
+      duration: Math.max(16, maxScroll / 28),
       ease: "none",
       repeat: -1,
+      yoyo: true,
     });
 
     return () => {
       tween.current?.kill();
       tween.current = null;
     };
-  }, [visibleProjects]);
+  }, [projectFilter, visibleProjects]);
 
   useEffect(() => {
     if (paused) tween.current?.pause();
     else tween.current?.resume();
   }, [paused]);
 
-  const loopingProjects = [...visibleProjects, ...visibleProjects];
+  const endDrag = (event) => {
+    if (!drag.current || drag.current.pointerId !== event.pointerId) return;
+    const currentDrag = drag.current;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    event.currentTarget.style.scrollSnapType = currentDrag.scrollSnapType;
+    drag.current = null;
+    if (suppressClick.current) {
+      window.setTimeout(() => {
+        suppressClick.current = false;
+      }, 0);
+    }
+  };
 
   return (
     <section id="projects" className={sectionClass}>
@@ -64,7 +94,7 @@ export function ProjectsSection() {
           <em className="font-serif">intent.</em>
         </h2>
         <p className="max-w-sm text-sm leading-6 text-stone-700 dark:text-[#a1a399]">
-          A curated, moving gallery of useful products and practical systems.
+          A curated selection of useful products and practical systems.
         </p>
       </div>
       <div className="mb-6 flex flex-wrap gap-2">
@@ -84,37 +114,89 @@ export function ProjectsSection() {
         onMouseLeave={() => setPaused(false)}
         onFocus={() => setPaused(true)}
         onBlur={() => setPaused(false)}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 [scrollbar-width:none]"
+        onPointerDown={(event) => {
+          if (
+            event.pointerType !== "mouse" ||
+            event.button !== 0 ||
+            event.target.closest("button, a")
+          ) {
+            return;
+          }
+          drag.current = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            scrollLeft: event.currentTarget.scrollLeft,
+            scrollSnapType: event.currentTarget.style.scrollSnapType,
+          };
+          suppressClick.current = false;
+          setPaused(true);
+          event.currentTarget.style.scrollSnapType = "none";
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (!drag.current || drag.current.pointerId !== event.pointerId) {
+            return;
+          }
+          const distance = event.clientX - drag.current.startX;
+          if (Math.abs(distance) > 4) suppressClick.current = true;
+          if (suppressClick.current) {
+            event.currentTarget.scrollLeft = drag.current.scrollLeft - distance;
+          }
+        }}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={(event) => {
+          if (suppressClick.current) {
+            event.preventDefault();
+            event.stopPropagation();
+            suppressClick.current = false;
+          }
+        }}
+        className="flex cursor-grab snap-x snap-mandatory gap-4 overflow-x-auto pb-4 active:cursor-grabbing [scrollbar-width:none]"
       >
-        {loopingProjects.map((project, index) => {
-          const duplicate = index >= visibleProjects.length;
-          const projectIndex = index % visibleProjects.length;
+        {visibleProjects.map((project, index) => {
+          const featuredBorder =
+            project.id === "manma"
+              ? "border-lime-600/60 dark:border-[#647a34]"
+              : project.id === "emotion-detection"
+                ? "border-lime-500/40 dark:border-[#52652e]"
+                : "border-stone-300 dark:border-[#373b33]";
 
           return (
             <article
-              key={`${project.id}-${index}`}
-              aria-hidden={duplicate}
-              className="min-w-[82vw] snap-start border border-stone-300 bg-stone-50 p-6 dark:border-[#373b33] dark:bg-[#181b17] sm:min-w-[440px]"
+              key={project.id}
+              className={`group w-[min(74vw,320px)] shrink-0 snap-start border bg-stone-50 p-4 transition-transform duration-200 hover:-translate-y-1 dark:bg-[#181b17] motion-reduce:transition-none ${featuredBorder}`}
             >
-              <div className="relative min-h-44 overflow-hidden border border-stone-300 bg-stone-200 p-4 font-mono text-[10px] text-stone-600 dark:border-[#373b33] dark:bg-[#20241e] dark:text-[#a1a399]">
-                <span>PROJECT / {String(projectIndex + 1).padStart(2, "0")}</span>
-                <b className="absolute left-4 top-1/2 text-xl tracking-[.12em]">
-                  {project.id.toUpperCase()}
-                </b>
-                <small className="absolute bottom-4 left-4 text-lime-600 dark:text-[#c7f464]">
-                  {project.technologies.slice(0, 3).join(" / ")}
-                </small>
+              <div className="relative h-36 overflow-hidden border border-stone-300 bg-stone-200 font-mono text-[10px] text-stone-700 dark:border-[#373b33] dark:bg-[#20241e] dark:text-[#d0d1c9]">
+                {project.image && (
+                  <img
+                    src={project.image}
+                    alt={`${project.title} preview`}
+                    className="absolute inset-0 h-full w-full object-cover opacity-35 transition-opacity duration-200 group-hover:opacity-45 motion-reduce:transition-none"
+                  />
+                )}
+                <div className="relative h-36 p-4">
+                  <span>
+                    PROJECT / {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <b className="absolute left-4 top-1/2 text-xl tracking-[.12em]">
+                    {project.id.toUpperCase()}
+                  </b>
+                  <small className="absolute bottom-4 left-4 text-lime-700 dark:text-[#c7f464]">
+                    {project.technologies.slice(0, 3).join(" / ")}
+                  </small>
+                </div>
               </div>
-              <p className="mt-5 font-mono text-[10px] text-lime-600 dark:text-[#c7f464]">
+              <p className="mt-4 font-mono text-[10px] text-lime-600 dark:text-[#c7f464]">
                 {project.categories.join(" / ")} · {project.year}
               </p>
-              <h3 className="mt-3 text-2xl font-bold tracking-[-.055em]">
+              <h3 className="mt-2 text-xl font-bold tracking-[-.055em]">
                 {project.title}
               </h3>
-              <p className="mt-3 text-sm leading-6 text-stone-700 dark:text-[#a1a399]">
+              <p className="mt-2 text-[13px] leading-5 text-stone-700 dark:text-[#a1a399]">
                 {project.description}
               </p>
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 {project.technologies.map((technology) => (
                   <span
                     key={technology}
@@ -124,20 +206,38 @@ export function ProjectsSection() {
                   </span>
                 ))}
               </div>
-              <button
-                tabIndex={duplicate ? -1 : undefined}
-                onClick={() => setSelectedProject(project)}
-                className="mt-7 border-b border-current pb-1 text-sm font-bold hover:text-lime-600 dark:hover:text-[#c7f464]"
-              >
-                Open case study ↗
-              </button>
+              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                {project.liveUrl && (
+                  <a
+                    href={project.liveUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-lime-300 px-3 py-2 text-xs font-bold text-[#19210c] transition hover:bg-lime-400"
+                  >
+                    Live demo ↗
+                  </a>
+                )}
+                {project.githubUrl && (
+                  <a
+                    href={project.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border-b border-current pb-1 text-xs font-bold transition hover:text-lime-700 dark:hover:text-[#c7f464]"
+                  >
+                    GitHub ↗
+                  </a>
+                )}
+                <button
+                  onClick={() => setSelectedProject(project)}
+                  className="border-b border-stone-400 pb-1 text-xs text-stone-600 transition hover:text-current dark:border-[#62665c] dark:text-[#b8baaf]"
+                >
+                  Details
+                </button>
+              </div>
             </article>
           );
         })}
       </div>
-      <p className="mt-2 font-mono text-[9px] text-stone-500 dark:text-[#a1a399]">
-        DRAG OR SWIPE TO EXPLORE · PAUSES ON HOVER
-      </p>
     </section>
   );
 }

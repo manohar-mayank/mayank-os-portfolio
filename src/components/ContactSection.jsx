@@ -18,6 +18,7 @@ export function ContactSection() {
           that care about details.
         </p>
         <div className="mt-8 flex flex-wrap gap-6">
+   
           <a
             className="bg-[#19210c] px-5 py-3 text-sm font-bold text-lime-300"
             href={gmailUrl}
@@ -26,6 +27,13 @@ export function ContactSection() {
           >
             Email me ↗
           </a>
+
+          {phoneUrl && (
+            <a className={textLinkClass} href={phoneUrl}>
+              Call me ↗
+            </a>
+          )}
+          
           <a
             className={textLinkClass}
             href={contact.github}
@@ -42,11 +50,6 @@ export function ContactSection() {
           >
             LinkedIn ↗
           </a>
-          {phoneUrl && (
-            <a className={textLinkClass} href={phoneUrl}>
-              Call me ↗
-            </a>
-          )}
           <a
             className={textLinkClass}
             href={contact.resume}

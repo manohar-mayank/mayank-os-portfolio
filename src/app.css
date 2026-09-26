@@ -4,6 +4,8 @@
 :root { --os-bg: #f0eee6; --os-surface: #faf8f0; --os-text: #161813; --os-muted: #4d5149; --os-border: #a8aa9e; --os-accent: #a3d628; }
 .dark { --os-bg: #121411; --os-surface: #181b17; --os-text: #eeeade; --os-muted: #a1a399; --os-border: #373b33; --os-accent: #c7f464; }
 
+.text-stone-500 { color: var(--os-muted); }
+
 .dark aside[aria-hidden="false"] { color: var(--os-text); }
 .dark aside[aria-hidden="false"] input { color: var(--os-text); }
 .dark aside[aria-hidden="false"] input::placeholder { color: var(--os-muted); opacity: 1; }

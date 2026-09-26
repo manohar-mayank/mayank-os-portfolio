@@ -1,6 +1,16 @@
-const baseUrl =
-  import.meta.env.VITE_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:5000";
+const configuredBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
+const baseUrl = import.meta.env.DEV ? "" : configuredBaseUrl || "";
+
+function readError(response) {
+  return response
+    .json()
+    .catch(() => ({}))
+    .then((payload) =>
+      payload.answer ||
+      payload.error ||
+      `Request failed with status ${response.status}`,
+    );
+}
 
 export async function askManma(message, conversation) {
   try {
@@ -15,51 +25,14 @@ export async function askManma(message, conversation) {
       }),
     });
 
-    // Read response as text first
-    const text = await response.text();
-
-    // Handle empty response
-    if (!text) {
-      throw new Error(
-        `Server returned an empty response (${response.status})`
-      );
-    }
-
-    // Convert JSON string → JavaScript object
-    let payload;
-
-    try {
-      payload = JSON.parse(text);
-    } catch (error) {
-      console.error("Invalid JSON from server:", text);
-      throw new Error("Server returned invalid JSON");
-    }
-
-    // Check HTTP status
-    if (!response.ok) {
-      throw new Error(
-        payload?.answer ||
-        payload?.error ||
-        `Request failed with status ${response.status}`
-      );
-    }
-
-    // Check your API's success field
+    if (!response.ok) throw new Error(await readError(response));
+    const payload = await response.json();
     if (payload.ok === false) {
-      throw new Error(
-        payload.answer ||
-        payload.error ||
-        "Manma request failed"
-      );
+      throw new Error(payload.answer || payload.error || "Manma request failed");
     }
-
     return payload;
-
   } catch (error) {
     console.error("Manma API request failed:", error);
-
-    throw new Error(
-      "Manma is temporarily unavailable. Try again."
-    );
+    throw new Error(error.message || "Manma is temporarily unavailable. Try again.");
   }
 }
